@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Control de Horas</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f0f0f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-inset">
+<meta name="apple-mobile-web-app-title" content="Horas">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0f0f;
+  --bg2: #1a1a1a;
+  --bg3: #242424;
+  --border: #2e2e2e;
+  --border2: #3a3a3a;
+  --text: #f0ede8;
+  --text2: #888;
+  --text3: #555;
+  --green: #00d97e;
+  --green-dim: #003d22;
+  --red: #ff4d4d;
+  --red-dim: #3d0000;
+  --yellow: #f5c518;
+  --yellow-dim: #2e2500;
+  --blue: #4d9fff;
+  --blue-dim: #001f3d;
+  --mono: 'DM Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+  --radius: 10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; }
+
+/* HEADER */
+.header { padding: 20px 16px 0; display: flex; align-items: center; justify-content: space-between; }
+.logo { font-family: var(--mono); font-size: 13px; color: var(--text3); letter-spacing: 2px; text-transform: uppercase; }
+.clock-big { font-family: var(--mono); font-size: 32px; font-weight: 500; color: var(--text); letter-spacing: -1px; text-align: center; padding: 12px 0 4px; }
+.date-big { font-size: 12px; color: var(--text3); text-align: center; letter-spacing: 1px; text-transform: uppercase; font-family: var(--mono); padding-bottom: 16px; }
+
+/* STATUS BAR */
+.status-bar { margin: 0 16px 16px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; display: flex; align-items: center; gap: 10px; }
+.pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--text3); flex-shrink: 0; }
+.pulse.on { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.status-info { flex: 1; }
+.status-main { font-size: 14px; font-weight: 500; }
+.status-sub { font-size: 12px; color: var(--text2); font-family: var(--mono); margin-top: 2px; }
+
+/* MAIN BUTTONS */
+.btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0 16px 20px; }
+.btn-primary { background: var(--green); color: #000; border: none; border-radius: var(--radius); padding: 16px; font-family: var(--sans); font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity .15s, transform .1s; }
+.btn-primary:active { transform: scale(.97); opacity: .85; }
+.btn-primary:disabled { background: var(--bg3); color: var(--text3); cursor: not-allowed; transform: none; }
+.btn-secondary { background: var(--bg2); color: var(--text); border: 1px solid var(--border2); border-radius: var(--radius); padding: 16px; font-family: var(--sans); font-size: 15px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background .15s, transform .1s; }
+.btn-secondary:active { transform: scale(.97); background: var(--bg3); }
+.btn-secondary:disabled { opacity: .35; cursor: not-allowed; transform: none; }
+
+/* TABS */
+.tabs { display: flex; margin: 0 16px 16px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 3px; gap: 3px; overflow-x: auto; }
+.tab { flex: 1; min-width: 0; padding: 8px 4px; font-size: 12px; font-family: var(--mono); letter-spacing: .5px; background: none; border: none; color: var(--text3); border-radius: 7px; cursor: pointer; white-space: nowrap; transition: all .15s; text-transform: uppercase; }
+.tab.active { background: var(--bg3); color: var(--text); }
+
+/* SECTION */
+.section { padding: 0 16px 24px; }
+.sec-title { font-size: 11px; color: var(--text3); letter-spacing: 2px; text-transform: uppercase; font-family: var(--mono); margin-bottom: 10px; }
+
+/* METRIC CARDS */
+.metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+.metric { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
+.metric-label { font-size: 11px; color: var(--text3); font-family: var(--mono); margin-bottom: 6px; }
+.metric-value { font-size: 22px; font-weight: 500; font-family: var(--mono); color: var(--text); }
+.metric-value.green { color: var(--green); }
+.metric-value.sm { font-size: 16px; }
+
+/* RECORDS */
+.rec-list { display: flex; flex-direction: column; gap: 6px; }
+.rec-item { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; }
+.rec-left .rec-date { font-size: 13px; font-weight: 500; }
+.rec-left .rec-times { font-size: 11px; color: var(--text2); font-family: var(--mono); margin-top: 3px; }
+.rec-hours { font-size: 14px; font-weight: 500; font-family: var(--mono); color: var(--green); }
+.rec-hours.pending { color: var(--text3); font-size: 11px; }
+.empty { text-align: center; color: var(--text3); font-size: 13px; padding: 32px 0; font-family: var(--mono); }
+
+/* ACTION BUTTONS ROW */
+.actions { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.btn-action { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 13px 16px; font-family: var(--sans); font-size: 14px; color: var(--text); cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background .15s; }
+.btn-action:active { background: var(--bg3); }
+.btn-action svg { flex-shrink: 0; }
+.btn-action span { flex: 1; text-align: left; }
+.btn-action .hint { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+
+/* COMPARE SECTION */
+.compare-upload { border: 1px dashed var(--border2); border-radius: var(--radius); padding: 24px; text-align: center; cursor: pointer; transition: border-color .15s; margin-bottom: 12px; }
+.compare-upload:active { border-color: var(--blue); }
+.compare-upload p { font-size: 13px; color: var(--text2); margin-top: 8px; }
+.compare-upload .up-icon { color: var(--blue); }
+.compare-result { display: flex; flex-direction: column; gap: 6px; }
+.cmp-item { border-radius: var(--radius); padding: 12px 14px; border: 1px solid var(--border); background: var(--bg2); }
+.cmp-item.ok { border-color: var(--green-dim); background: #0a1a10; }
+.cmp-item.diff { border-color: #3d1a00; background: #1a0e00; }
+.cmp-item.missing { border-color: var(--border); background: var(--bg2); }
+.cmp-date { font-size: 12px; font-weight: 500; margin-bottom: 6px; }
+.cmp-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cmp-col { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+.cmp-col span { display: block; color: var(--text); font-size: 12px; margin-top: 2px; }
+.cmp-badge { font-size: 10px; padding: 2px 8px; border-radius: 20px; font-family: var(--mono); margin-top: 6px; display: inline-block; }
+.cmp-badge.ok { background: var(--green-dim); color: var(--green); }
+.cmp-badge.diff { background: #3d1a00; color: #ff8c42; }
+.cmp-badge.missing { background: var(--bg3); color: var(--text3); }
+.loading-cmp { text-align: center; padding: 32px; color: var(--text2); font-size: 13px; font-family: var(--mono); }
+.loading-cmp .spinner { width: 24px; height: 24px; border: 2px solid var(--border2); border-top-color: var(--blue); border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 12px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.api-key-wrap { margin-bottom: 12px; }
+.api-key-wrap label { font-size: 11px; color: var(--text3); font-family: var(--mono); letter-spacing: 1px; text-transform: uppercase; display: block; margin-bottom: 6px; }
+.api-key-wrap input { width: 100%; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; font-family: var(--mono); font-size: 13px; color: var(--text); outline: none; }
+.api-key-wrap input:focus { border-color: var(--blue); }
+.api-key-hint { font-size: 11px; color: var(--text3); margin-top: 6px; }
+.cmp-summary { background: var(--bg3); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 12px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center; }
+.cmp-sum-val { font-size: 18px; font-weight: 500; font-family: var(--mono); }
+.cmp-sum-label { font-size: 10px; color: var(--text3); margin-top: 2px; letter-spacing: 1px; text-transform: uppercase; }
+.img-preview { width: 100%; border-radius: var(--radius); margin-bottom: 12px; border: 1px solid var(--border); max-height: 180px; object-fit: cover; }
+
+/* CONFIRM SHEET */
+.overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 100; align-items: flex-end; }
+.overlay.show { display: flex; }
+.sheet { background: var(--bg2); border: 1px solid var(--border2); border-radius: 16px 16px 0 0; padding: 20px 16px 32px; width: 100%; }
+.sheet-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+.sheet-msg { font-size: 13px; color: var(--text2); font-family: var(--mono); margin-bottom: 20px; }
+.sheet-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.sheet-confirm { background: var(--green); color: #000; border: none; border-radius: var(--radius); padding: 14px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: var(--sans); }
+.sheet-confirm.out { background: var(--bg3); color: var(--text); border: 1px solid var(--border2); }
+.sheet-cancel { background: transparent; color: var(--text2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; font-size: 14px; cursor: pointer; font-family: var(--sans); }
+
+/* TOAST */
+.toast { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--bg3); border: 1px solid var(--border2); border-radius: 20px; padding: 10px 20px; font-size: 13px; font-family: var(--mono); color: var(--text); opacity: 0; transition: opacity .2s, transform .2s; z-index: 200; white-space: nowrap; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+input[type=file] { display: none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">HRS</div>
+  <div style="font-size:11px;color:var(--text3);font-family:var(--mono)" id="week-total-header"></div>
+</div>
+
+<div class="clock-big" id="clock">--:--:--</div>
+<div class="date-big" id="date-lbl"></div>
+
+<div class="status-bar">
+  <div class="pulse" id="pulse"></div>
+  <div class="status-info">
+    <div class="status-main" id="st-main">Sin marcar hoy</div>
+    <div class="status-sub" id="st-sub"></div>
+  </div>
+</div>
+
+<div class="btn-row">
+  <button class="btn-primary" id="btn-in" onclick="confirmAction('in')">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+    Entrada
+  </button>
+  <button class="btn-secondary" id="btn-out" onclick="confirmAction('out')">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    Salida
+  </button>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="setTab('hoy',this)">Hoy</button>
+  <button class="tab" onclick="setTab('semana',this)">Semana</button>
+  <button class="tab" onclick="setTab('historial',this)">Historial</button>
+  <button class="tab" onclick="setTab('comparar',this)">Comparar</button>
+  <button class="tab" onclick="setTab('datos',this)">Datos</button>
+</div>
+
+<!-- TAB HOY -->
+<div class="section" id="tab-hoy">
+  <div class="sec-title">Hoy</div>
+  <div class="metrics">
+    <div class="metric"><div class="metric-label">ENTRADA</div><div class="metric-value sm" id="h-in">--:--</div></div>
+    <div class="metric"><div class="metric-label">SALIDA</div><div class="metric-value sm" id="h-out">--:--</div></div>
+    <div class="metric"><div class="metric-label">TRABAJADO</div><div class="metric-value green" id="h-total">0h 0m</div></div>
+    <div class="metric"><div class="metric-label">EN CURSO</div><div class="metric-value sm green" id="h-live">--</div></div>
+  </div>
+</div>
+
+<!-- TAB SEMANA -->
+<div class="section" id="tab-semana" style="display:none">
+  <div class="sec-title">Esta semana</div>
+  <div class="metrics">
+    <div class="metric"><div class="metric-label">DÍAS</div><div class="metric-value" id="s-dias">0</div></div>
+    <div class="metric"><div class="metric-label">TOTAL</div><div class="metric-value green" id="s-total">0h</div></div>
+  </div>
+  <div class="rec-list" id="s-list"></div>
+</div>
+
+<!-- TAB HISTORIAL -->
+<div class="section" id="tab-historial" style="display:none">
+  <div class="sec-title">Todos los registros</div>
+  <div class="rec-list" id="h-list"></div>
+</div>
+
+<!-- TAB COMPARAR -->
+<div class="section" id="tab-comparar" style="display:none">
+  <div class="sec-title">Comparar con informe empresa</div>
+  <div class="api-key-wrap">
+    <label>API Key de Anthropic</label>
+    <input type="password" id="api-key" placeholder="sk-ant-..." oninput="saveKey()" />
+    <p class="api-key-hint">Necesaria para leer la imagen. Se guarda solo en este dispositivo.<br>Obtené la tuya en <strong>console.anthropic.com</strong></p>
+  </div>
+  <div class="compare-upload" onclick="document.getElementById('img-input').click()">
+    <svg class="up-icon" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <p>Tocá para subir la imagen del informe de la empresa</p>
+    <p style="font-size:11px;color:var(--text3);margin-top:4px;font-family:var(--mono)">JPG, PNG, captura de pantalla</p>
+  </div>
+  <input type="file" id="img-input" accept="image/*" onchange="handleImage(this)">
+  <div id="cmp-area"></div>
+</div>
+
+<!-- TAB DATOS -->
+<div class="section" id="tab-datos" style="display:none">
+  <div class="sec-title">Gestión de datos</div>
+  <div class="actions">
+    <button class="btn-action" onclick="exportData()">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span>Exportar mis horas<br><span class="hint">Guarda un archivo .json para respaldar o compartir</span></span>
+    </button>
+    <button class="btn-action" onclick="document.getElementById('imp-input').click()">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <span>Importar horas<br><span class="hint">Carga un archivo exportado previamente</span></span>
+    </button>
+    <input type="file" id="imp-input" accept=".json" onchange="importData(this)">
+    <button class="btn-action" onclick="exportCSV()">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+      <span>Exportar como CSV<br><span class="hint">Compatible con Excel y Google Sheets</span></span>
+    </button>
+    <button class="btn-action" style="border-color:#3d0000;color:var(--red)" onclick="confirmDelete()">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+      <span>Borrar todos los datos<br><span class="hint">No se puede deshacer</span></span>
+    </button>
+  </div>
+  <div class="sec-title" style="margin-top:8px">Estadísticas</div>
+  <div class="metrics">
+    <div class="metric"><div class="metric-label">TOTAL DÍAS</div><div class="metric-value" id="stat-days">0</div></div>
+    <div class="metric"><div class="metric-label">TOTAL HORAS</div><div class="metric-value green" id="stat-hours">0h</div></div>
+  </div>
+</div>
+
+<!-- CONFIRM OVERLAY -->
+<div class="overlay" id="overlay">
+  <div class="sheet">
+    <div class="sheet-title" id="sh-title"></div>
+    <div class="sheet-msg" id="sh-msg"></div>
+    <div class="sheet-btns">
+      <button class="sheet-cancel" onclick="closeSheet()">Cancelar</button>
+      <button class="sheet-confirm" id="sh-ok" onclick="doAction()"></button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let records = [];
+let pendingAction = null;
+
+const STORAGE_KEY = 'hrs_records_v2';
+const KEY_API = 'hrs_apikey';
+
+function pz(n){ return String(n).padStart(2,'0'); }
+function fmtTime(ts){ const d=new Date(ts); return pz(d.getHours())+':'+pz(d.getMinutes()); }
+function fmtTimeSec(d){ return pz(d.getHours())+':'+pz(d.getMinutes())+':'+pz(d.getSeconds()); }
+function todayKey(){ const d=new Date(); return d.getFullYear()+'-'+pz(d.getMonth()+1)+'-'+pz(d.getDate()); }
+function msToHM(ms){
+  if(ms<0) ms=0;
+  const h=Math.floor(ms/3600000);
+  const m=Math.floor((ms%3600000)/60000);
+  return h+'h '+pz(m)+'m';
+}
+function msToH(ms){
+  if(ms<0) ms=0;
+  const h=(ms/3600000);
+  return h.toFixed(2)+'h';
+}
+function dateLabel(key){
+  const [y,m,d]=key.split('-');
+  const days=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const months=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const dt=new Date(+y,+m-1,+d);
+  return days[dt.getDay()]+' '+d+' '+months[+m-1];
+}
+
+function load(){ try{ records=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'); }catch(e){ records=[]; } }
+function save(){ localStorage.setItem(STORAGE_KEY,JSON.stringify(records)); }
+function saveKey(){ localStorage.setItem(KEY_API, document.getElementById('api-key').value.trim()); }
+function loadKey(){ const k=localStorage.getItem(KEY_API)||''; document.getElementById('api-key').value=k; }
+
+function getToday(){ return records.find(r=>r.key===todayKey())||null; }
+
+function toast(msg, dur=2000){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), dur);
+}
+
+function updateClock(){
+  const now=new Date();
+  document.getElementById('clock').textContent=fmtTimeSec(now);
+  const days=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const months=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  document.getElementById('date-lbl').textContent=days[now.getDay()]+' '+now.getDate()+' de '+months[now.getMonth()]+' '+now.getFullYear();
+  updateLive();
+}
+
+function updateLive(){
+  const t=getToday();
+  if(t&&t.in&&!t.out){
+    const diff=Date.now()-t.in;
+    document.getElementById('h-live').textContent=msToHM(diff);
+  }
+  // week header
+  const wk=getWeekRecords();
+  let ms=0; wk.forEach(r=>{if(r.in&&r.out) ms+=r.out-r.in;});
+  document.getElementById('week-total-header').textContent=msToHM(ms)+' esta semana';
+}
+
+function updateUI(){
+  const t=getToday();
+  const pulse=document.getElementById('pulse');
+  const stMain=document.getElementById('st-main');
+  const stSub=document.getElementById('st-sub');
+  const btnIn=document.getElementById('btn-in');
+  const btnOut=document.getElementById('btn-out');
+
+  if(!t){
+    pulse.className='pulse';
+    stMain.textContent='Sin marcar hoy';
+    stSub.textContent='';
+    btnIn.disabled=false; btnOut.disabled=true;
+    document.getElementById('h-in').textContent='--:--';
+    document.getElementById('h-out').textContent='--:--';
+    document.getElementById('h-total').textContent='0h 0m';
+    document.getElementById('h-live').textContent='--';
+  } else if(t.in&&!t.out){
+    pulse.className='pulse on';
+    stMain.textContent='Trabajando';
+    stSub.textContent='Entrada: '+fmtTime(t.in);
+    btnIn.disabled=true; btnOut.disabled=false;
+    document.getElementById('h-in').textContent=fmtTime(t.in);
+    document.getElementById('h-out').textContent='--:--';
+    document.getElementById('h-total').textContent='0h 0m';
+  } else if(t.in&&t.out){
+    pulse.className='pulse';
+    stMain.textContent='Jornada completa';
+    stSub.textContent='Trabajaste '+msToHM(t.out-t.in);
+    btnIn.disabled=true; btnOut.disabled=true;
+    document.getElementById('h-in').textContent=fmtTime(t.in);
+    document.getElementById('h-out').textContent=fmtTime(t.out);
+    document.getElementById('h-total').textContent=msToHM(t.out-t.in);
+    document.getElementById('h-live').textContent='Listo';
+  }
+
+  renderSemana(); renderHistorial(); renderStats();
+}
+
+function getWeekRecords(){
+  const now=new Date();
+  const dow=now.getDay();
+  const mon=new Date(now);
+  mon.setDate(now.getDate()-(dow===0?6:dow-1));
+  mon.setHours(0,0,0,0);
+  return records.filter(r=>{
+    const[y,m,d]=r.key.split('-');
+    return new Date(+y,+m-1,+d)>=mon;
+  }).sort((a,b)=>b.key.localeCompare(a.key));
+}
+
+function renderList(recs, el){
+  if(!recs.length){ el.innerHTML='<div class="empty">sin registros</div>'; return; }
+  el.innerHTML='';
+  recs.forEach(r=>{
+    const div=document.createElement('div');
+    div.className='rec-item';
+    const inS=r.in?fmtTime(r.in):'--:--';
+    const outS=r.out?fmtTime(r.out):'--:--';
+    let hoursHtml='';
+    if(r.in&&r.out) hoursHtml='<div class="rec-hours">'+msToHM(r.out-r.in)+'</div>';
+    else if(r.in) hoursHtml='<div class="rec-hours pending">en curso</div>';
+    div.innerHTML='<div class="rec-left"><div class="rec-date">'+dateLabel(r.key)+'</div><div class="rec-times">'+inS+' → '+outS+'</div></div>'+hoursHtml;
+    el.appendChild(div);
+  });
+}
+
+function renderSemana(){
+  const wk=getWeekRecords();
+  let ms=0; wk.forEach(r=>{if(r.in&&r.out) ms+=r.out-r.in;});
+  document.getElementById('s-dias').textContent=wk.filter(r=>r.in).length;
+  document.getElementById('s-total').textContent=msToHM(ms);
+  renderList(wk, document.getElementById('s-list'));
+}
+
+function renderHistorial(){
+  const sorted=[...records].sort((a,b)=>b.key.localeCompare(a.key));
+  renderList(sorted, document.getElementById('h-list'));
+}
+
+function renderStats(){
+  let ms=0;
+  records.forEach(r=>{if(r.in&&r.out) ms+=r.out-r.in;});
+  document.getElementById('stat-days').textContent=records.filter(r=>r.in).length;
+  document.getElementById('stat-hours').textContent=msToHM(ms);
+}
+
+function setTab(name, btn){
+  ['hoy','semana','historial','comparar','datos'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display=t===name?'':'none';
+  });
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function confirmAction(type){
+  pendingAction=type;
+  const now=fmtTime(Date.now());
+  document.getElementById('sh-title').textContent=type==='in'?'Marcar entrada':'Marcar salida';
+  document.getElementById('sh-msg').textContent='Hora: '+now+' — ¿Confirmás?';
+  const ok=document.getElementById('sh-ok');
+  ok.textContent=type==='in'?'Confirmar entrada':'Confirmar salida';
+  ok.className='sheet-confirm'+(type==='out'?' out':'');
+  document.getElementById('overlay').classList.add('show');
+}
+
+function confirmDelete(){
+  pendingAction='delete';
+  document.getElementById('sh-title').textContent='Borrar todos los datos';
+  document.getElementById('sh-msg').textContent='Se eliminarán todos los registros. No se puede deshacer.';
+  const ok=document.getElementById('sh-ok');
+  ok.textContent='Borrar todo';
+  ok.className='sheet-confirm out';
+  document.getElementById('overlay').classList.add('show');
+}
+
+function closeSheet(){
+  document.getElementById('overlay').classList.remove('show');
+  pendingAction=null;
+}
+
+function doAction(){
+  closeSheet();
+  if(pendingAction==='in'){
+    const key=todayKey();
+    if(!records.find(r=>r.key===key)) records.push({key,in:Date.now(),out:null});
+    toast('✓ Entrada registrada');
+  } else if(pendingAction==='out'){
+    const rec=records.find(r=>r.key===todayKey());
+    if(rec&&rec.in&&!rec.out){ rec.out=Date.now(); toast('✓ Salida registrada'); }
+  } else if(pendingAction==='delete'){
+    records=[]; toast('Datos eliminados');
+  }
+  save(); updateUI();
+}
+
+// EXPORT / IMPORT
+function exportData(){
+  const blob=new Blob([JSON.stringify({version:2,exported:new Date().toISOString(),records},null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='mis-horas-'+todayKey()+'.json'; a.click();
+  URL.revokeObjectURL(url);
+  toast('Archivo exportado');
+}
+
+function importData(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      const imported=data.records||data;
+      if(!Array.isArray(imported)) throw new Error();
+      // merge: no duplicar por key
+      const keys=new Set(records.map(r=>r.key));
+      let added=0;
+      imported.forEach(r=>{ if(!keys.has(r.key)){ records.push(r); added++; } });
+      save(); updateUI();
+      toast('Importados '+added+' registros nuevos');
+    }catch(e){ toast('Archivo inválido'); }
+  };
+  reader.readAsText(file);
+  input.value='';
+}
+
+function exportCSV(){
+  let csv='Fecha,Entrada,Salida,Horas\n';
+  [...records].sort((a,b)=>a.key.localeCompare(b.key)).forEach(r=>{
+    const inS=r.in?fmtTime(r.in):'';
+    const outS=r.out?fmtTime(r.out):'';
+    const h=r.in&&r.out?((r.out-r.in)/3600000).toFixed(2):'';
+    csv+=r.key+','+inS+','+outS+','+h+'\n';
+  });
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='mis-horas-'+todayKey()+'.csv'; a.click();
+  URL.revokeObjectURL(url);
+  toast('CSV exportado');
+}
+
+// COMPARE WITH IMAGE
+async function handleImage(input){
+  const file=input.files[0]; if(!file) return;
+  const apiKey=localStorage.getItem(KEY_API)||'';
+  if(!apiKey){
+    toast('Ingresá tu API key primero'); return;
+  }
+
+  const area=document.getElementById('cmp-area');
+  area.innerHTML='';
+
+  // show preview
+  const imgURL=URL.createObjectURL(file);
+  const preview=document.createElement('img');
+  preview.src=imgURL; preview.className='img-preview';
+  area.appendChild(preview);
+
+  area.innerHTML+='<div class="loading-cmp"><div class="spinner"></div>Analizando imagen con IA...</div>';
+
+  // Convert to base64
+  const base64=await new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result.split(',')[1]);
+    r.onerror=()=>rej();
+    r.readAsDataURL(file);
+  });
+
+  // Build records summary for Claude
+  const recsSummary=records.map(r=>{
+    const inS=r.in?fmtTime(r.in):'sin marcar';
+    const outS=r.out?fmtTime(r.out):'sin marcar';
+    return r.key+': entrada '+inS+', salida '+outS;
+  }).join('\n');
+
+  const prompt=`Sos un asistente que analiza informes de horas laborales.
+
+Extraé de la imagen TODAS las filas de la tabla con: fecha de entrada, hora de entrada, fecha de salida, hora de salida.
+Devolvé SOLO un JSON válido con este formato exacto, sin texto extra, sin markdown:
+{
+  "rows": [
+    {"fecha_entrada": "YYYY-MM-DD", "hora_entrada": "HH:MM", "fecha_salida": "YYYY-MM-DD", "hora_salida": "HH:MM"},
+    ...
+  ]
+}
+
+Mis registros personales son:
+${recsSummary}
+
+Después de extraer los datos, incluí también un campo "comparacion" en el JSON con el resultado de comparar cada fila del informe contra mis registros, indicando si coinciden, difieren o si no tengo registro para esa fecha. Formato:
+{
+  "rows": [...],
+  "comparacion": [
+    {"fecha": "YYYY-MM-DD", "empresa_in": "HH:MM", "empresa_out": "HH:MM", "mi_in": "HH:MM o null", "mi_out": "HH:MM o null", "estado": "ok|diferencia|sin_registro"}
+  ]
+}`;
+
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:2000,
+        messages:[{
+          role:'user',
+          content:[
+            {type:'image',source:{type:'base64',media_type:file.type||'image/jpeg',data:base64}},
+            {type:'text',text:prompt}
+          ]
+        }]
+      })
+    });
+
+    const data=await resp.json();
+    if(data.error){ throw new Error(data.error.message); }
+
+    const text=data.content.map(c=>c.text||'').join('');
+    const clean=text.replace(/```json|```/g,'').trim();
+    const parsed=JSON.parse(clean);
+    renderComparison(parsed, area, preview);
+  } catch(e){
+    area.innerHTML='<img src="'+imgURL+'" class="img-preview"><div class="loading-cmp" style="color:var(--red)">Error: '+(e.message||'No se pudo analizar la imagen')+'</div>';
+  }
+  input.value='';
+}
+
+function renderComparison(data, area, preview){
+  const cmp=data.comparacion||[];
+  area.innerHTML='';
+  area.appendChild(preview);
+
+  const ok=cmp.filter(r=>r.estado==='ok').length;
+  const diff=cmp.filter(r=>r.estado==='diferencia').length;
+  const sinReg=cmp.filter(r=>r.estado==='sin_registro').length;
+
+  const summary=document.createElement('div');
+  summary.className='cmp-summary';
+  summary.innerHTML=
+    '<div><div class="cmp-sum-val" style="color:var(--green)">'+ok+'</div><div class="cmp-sum-label">Coinciden</div></div>'+
+    '<div><div class="cmp-sum-val" style="color:#ff8c42">'+diff+'</div><div class="cmp-sum-label">Difieren</div></div>'+
+    '<div><div class="cmp-sum-val" style="color:var(--text3)">'+sinReg+'</div><div class="cmp-sum-label">Sin registro</div></div>';
+  area.appendChild(summary);
+
+  const list=document.createElement('div');
+  list.className='compare-result';
+
+  cmp.forEach(r=>{
+    const item=document.createElement('div');
+    item.className='cmp-item '+r.estado.replace('sin_registro','missing').replace('diferencia','diff');
+
+    const[y,m,d]=r.fecha.split('-');
+    const days=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    const months=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    const dt=new Date(+y,+m-1,+d);
+    const dateStr=days[dt.getDay()]+' '+d+' '+months[+m-1];
+
+    let badgeClass=r.estado==='ok'?'ok':r.estado==='diferencia'?'diff':'missing';
+    let badgeText=r.estado==='ok'?'✓ coincide':r.estado==='diferencia'?'↕ difiere':'— sin registro';
+
+    item.innerHTML='<div class="cmp-date">'+dateStr+'</div>'+
+      '<div class="cmp-row">'+
+        '<div class="cmp-col">EMPRESA<span>'+r.empresa_in+' → '+r.empresa_out+'</span></div>'+
+        '<div class="cmp-col">MIS DATOS<span>'+(r.mi_in||'--')+' → '+(r.mi_out||'--')+'</span></div>'+
+      '</div>'+
+      '<span class="cmp-badge '+badgeClass+'">'+badgeText+'</span>';
+    list.appendChild(item);
+  });
+
+  area.appendChild(list);
+}
+
+// INIT
+load();
+loadKey();
+setInterval(updateClock, 1000);
+updateClock();
+updateUI();
+</script>
+
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js');
+  });
+}
+</script>
+</body>
+</html>
