@@ -477,6 +477,7 @@ input[type=file] { display: none; }
       <button class="edit-cancel" onclick="closeEdit()">Cancelar</button>
       <button class="edit-save" onclick="saveEdit()">Guardar</button>
     </div>
+    <button id="edit-delete-btn" onclick="deleteRecord()" style="display:none;width:100%;margin-top:10px;background:transparent;color:var(--red);border:1px solid #3a1010;border-radius:var(--r);padding:13px;font-family:var(--syne);font-size:13px;cursor:pointer;">Eliminar este día</button>
   </div>
 </div>
 
@@ -640,6 +641,7 @@ function openNewDay(){
   document.getElementById('edit-date').value=todayKey();
   document.getElementById('edit-in').value='';
   document.getElementById('edit-out').value='';
+  document.getElementById('edit-delete-btn').style.display='none';
   document.getElementById('edit-overlay').classList.add('show');
 }
 function openEdit(key){
@@ -649,8 +651,10 @@ function openEdit(key){
   document.getElementById('edit-date-wrap').style.display='none';
   document.getElementById('edit-in').value=r&&r.in?fmtTime(r.in):'';
   document.getElementById('edit-out').value=r&&r.out?fmtTime(r.out):'';
+  document.getElementById('edit-delete-btn').style.display='block';
   document.getElementById('edit-overlay').classList.add('show');
 }
+function deleteRecord(){if(!editingKey)return;records=records.filter(r=>r.key!==editingKey);save();updateUI();closeEdit();toast('Día eliminado');}
 function closeEdit(){document.getElementById('edit-overlay').classList.remove('show');editingKey=null;}
 function saveEdit(){
   const iv=document.getElementById('edit-in').value;
