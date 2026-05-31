@@ -380,8 +380,9 @@ input[type=file] { display: none; }
   <div class="grid4">
     <div class="card"><div class="card-label">Días</div><div class="card-val" id="s-dias">0</div></div>
     <div class="card"><div class="card-label">Normales</div><div class="card-val lime sm" id="s-normal">0h</div></div>
-    <div class="card"><div class="card-label">Extras</div><div class="card-val amber sm" id="s-extra">0h</div></div>
-    <div class="card"><div class="card-label">Total</div><div class="card-val lime sm" id="s-total">0h</div></div>
+    <div class="card"><div class="card-label">Extras 50%</div><div class="card-val amber sm" id="s-extra" style="font-size:14px">0h</div></div>
+    <div class="card"><div class="card-label">Extras 100%</div><div class="card-val amber sm" id="s-extra100" style="font-size:14px">0h</div></div>
+    <div class="card" style="grid-column:span 2"><div class="card-label">Total horas</div><div class="card-val lime sm" id="s-total">0h</div></div>
   </div>
   <div class="rec-list" id="s-list"></div>
 </div>
@@ -418,8 +419,17 @@ input[type=file] { display: none; }
   <div class="grid4" style="margin-bottom:24px">
     <div class="card"><div class="card-label">Días</div><div class="card-val" id="stat-days">0</div></div>
     <div class="card"><div class="card-label">Normales</div><div class="card-val lime sm" id="stat-normal">0h</div></div>
-    <div class="card"><div class="card-label">Extras</div><div class="card-val amber sm" id="stat-extra">0h</div></div>
-    <div class="card"><div class="card-label">Total</div><div class="card-val lime sm" id="stat-hours">0h</div></div>
+    <div class="card"><div class="card-label">Extras 50%</div><div class="card-val amber sm" id="stat-extra50">0h</div></div>
+    <div class="card"><div class="card-label">Extras 100%</div><div class="card-val amber sm" id="stat-extra100">0h</div></div>
+    <div class="card" style="grid-column:span 2"><div class="card-label">Total horas</div><div class="card-val lime sm" id="stat-hours">0h</div></div>
+  </div>
+  <div class="sec-label">Feriados</div>
+  <div style="margin-bottom:20px">
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <input type="date" id="holiday-input" class="edit-inp" style="flex:1;font-size:14px;padding:10px 12px" />
+      <button onclick="addHoliday()" style="background:var(--lime);color:#0d1400;border:none;border-radius:var(--r);padding:10px 16px;font-family:var(--syne);font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">+ Agregar</button>
+    </div>
+    <div id="holiday-list" style="display:flex;flex-direction:column;gap:6px"></div>
   </div>
   <div class="sec-label">Archivos</div>
   <div class="data-list">
@@ -493,11 +503,19 @@ const fmtSec=d=>pz(d.getHours())+':'+pz(d.getMinutes())+':'+pz(d.getSeconds());
 const todayKey=()=>{const d=new Date();return d.getFullYear()+'-'+pz(d.getMonth()+1)+'-'+pz(d.getDate());};
 function isWeekend(key){const[y,m,d]=key.split('-');const w=new Date(+y,+m-1,+d).getDay();return w===0||w===6;}
 const NORMAL_LIMIT=9*3600000;
+let holidays=[];
+function loadHolidays(){try{holidays=JSON.parse(localStorage.getItem('hrs_holidays')||'[]');}catch(e){holidays=[];}}
+function saveHolidays(){localStorage.setItem('hrs_holidays',JSON.stringify(holidays));}
+function isHoliday(key){return holidays.includes(key);}
+function isSpecialDay(key){return isWeekend(key)||isHoliday(key);}
+// Returns {normal, extra50, extra100} in ms
 function calcHours(r){
-  if(!r.in||!r.out)return{normal:0,extra:0};
+  if(!r.in||!r.out)return{normal:0,extra50:0,extra100:0};
   const total=r.out-r.in;
-  if(isWeekend(r.key))return{normal:0,extra:total};
-  return{normal:Math.min(total,NORMAL_LIMIT),extra:Math.max(0,total-NORMAL_LIMIT)};
+  if(isSpecialDay(r.key))return{normal:0,extra50:0,extra100:total};
+  const normal=Math.min(total,NORMAL_LIMIT);
+  const extra50=Math.max(0,total-NORMAL_LIMIT);
+  return{normal,extra50,extra100:0};
 }
 function msToHM(ms){if(ms<0)ms=0;return Math.floor(ms/3600000)+'h '+pz(Math.floor((ms%3600000)/60000))+'m';}
 function dateLabel(key){
@@ -572,7 +590,20 @@ function updateUI(){
 
 function getWeekRecords(){
   const now=new Date();
-  return records.filter(r=>{const[y,m]=r.key.split('-');return +y===now.getFullYear()&&+m===(now.getMonth()+1);}).sort((a,b)=>b.key.localeCompare(a.key));
+  // Billing period: 24th of prev month to 23rd of current month
+  let start, end;
+  if(now.getDate()>=24){
+    start=new Date(now.getFullYear(),now.getMonth(),24);
+    end=new Date(now.getFullYear(),now.getMonth()+1,23,23,59,59);
+  } else {
+    start=new Date(now.getFullYear(),now.getMonth()-1,24);
+    end=new Date(now.getFullYear(),now.getMonth(),23,23,59,59);
+  }
+  return records.filter(r=>{
+    const[y,m,d]=r.key.split('-');
+    const dt=new Date(+y,+m-1,+d);
+    return dt>=start&&dt<=end;
+  }).sort((a,b)=>b.key.localeCompare(a.key));
 }
 
 function renderList(recs,el,editable=false){
@@ -588,9 +619,10 @@ function renderList(recs,el,editable=false){
     let rhs='<div class="rec-rhs">';
     if(r.in&&r.out){
       const ch=calcHours(r);
-      rhs+='<div class="rec-dur'+(ch.extra>0?' amber':'')+'">'+msToHM(r.out-r.in)+'</div>';
-      if(wk)rhs+='<div class="rec-tag">todo extra</div>';
-      else if(ch.extra>0)rhs+='<div class="rec-tag">+'+msToHM(ch.extra)+'</div>';
+      const hasExtra=ch.extra50>0||ch.extra100>0;
+      rhs+='<div class="rec-dur'+(hasExtra?' amber':'')+'">'+msToHM(r.out-r.in)+'</div>';
+      if(ch.extra100>0&&ch.extra50===0&&ch.normal===0)rhs+='<div class="rec-tag">100%</div>';
+      else if(ch.extra50>0)rhs+='<div class="rec-tag">+'+msToHM(ch.extra50)+' al 50%</div>';
     }else if(r.in){
       rhs+='<div class="rec-dur dim">en curso</div>';
     }
@@ -603,12 +635,13 @@ function renderList(recs,el,editable=false){
 
 function renderSemana(){
   const wk=getWeekRecords();
-  let n=0,e=0;
-  wk.forEach(r=>{if(r.in&&r.out){const ch=calcHours(r);n+=ch.normal;e+=ch.extra;}});
+  let n=0,e50=0,e100=0;
+  wk.forEach(r=>{if(r.in&&r.out){const ch=calcHours(r);n+=ch.normal;e50+=ch.extra50;e100+=ch.extra100;}});
   document.getElementById('s-dias').textContent=wk.filter(r=>r.in).length;
   document.getElementById('s-normal').textContent=msToHM(n);
-  document.getElementById('s-extra').textContent=msToHM(e);
-  document.getElementById('s-total').textContent=msToHM(n+e);
+  document.getElementById('s-extra').textContent=msToHM(e50);
+  document.getElementById('s-extra100') && (document.getElementById('s-extra100').textContent=msToHM(e100));
+  document.getElementById('s-total').textContent=msToHM(n+e50+e100);
   renderList(wk,document.getElementById('s-list'),false);
 }
 
@@ -619,12 +652,13 @@ function renderHistorial(){
 function renderStats(){
   const now=new Date();
   const m=records.filter(r=>{const[y,mo]=r.key.split('-');return +y===now.getFullYear()&&+mo===(now.getMonth()+1);});
-  let n=0,e=0;
-  m.forEach(r=>{if(r.in&&r.out){const ch=calcHours(r);n+=ch.normal;e+=ch.extra;}});
+  let n=0,e50=0,e100=0;
+  m.forEach(r=>{if(r.in&&r.out){const ch=calcHours(r);n+=ch.normal;e50+=ch.extra50;e100+=ch.extra100;}});
   document.getElementById('stat-days').textContent=m.filter(r=>r.in).length;
   document.getElementById('stat-normal').textContent=msToHM(n);
-  document.getElementById('stat-extra').textContent=msToHM(e);
-  document.getElementById('stat-hours').textContent=msToHM(n+e);
+  document.getElementById('stat-extra50').textContent=msToHM(e50);
+  document.getElementById('stat-extra100').textContent=msToHM(e100);
+  document.getElementById('stat-hours').textContent=msToHM(n+e50+e100);
 }
 
 function setTab(name,btn){
@@ -769,7 +803,27 @@ function renderComparison(data,area,preview){
   area.appendChild(list);
 }
 
-load();loadKey();
+function renderHolidays(){
+  const el=document.getElementById('holiday-list');
+  if(!holidays.length){el.innerHTML='<div style="font-family:var(--mono);font-size:11px;color:var(--ink3);padding:8px 0">Sin feriados cargados</div>';return;}
+  el.innerHTML='';
+  [...holidays].sort().forEach(k=>{
+    const div=document.createElement('div');
+    div.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--bg2);border:1px solid var(--line);border-radius:var(--r)';
+    div.innerHTML='<span style="font-family:var(--mono);font-size:13px">'+dateLabel(k)+'</span><button onclick="removeHoliday(''+k+'')" style="background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;padding:0 4px">×</button>';
+    el.appendChild(div);
+  });
+}
+function addHoliday(){
+  const val=document.getElementById('holiday-input').value;
+  if(!val)return;
+  if(!holidays.includes(val)){holidays.push(val);saveHolidays();renderHolidays();updateUI();toast('Feriado agregado');}
+  document.getElementById('holiday-input').value='';
+}
+function removeHoliday(k){
+  holidays=holidays.filter(h=>h!==k);saveHolidays();renderHolidays();updateUI();toast('Feriado eliminado');
+}
+load();loadKey();loadHolidays();renderHolidays();
 setInterval(updateClock,1000);
 updateClock();updateUI();
 </script>
