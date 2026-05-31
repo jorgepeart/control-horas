@@ -388,7 +388,10 @@ input[type=file] { display: none; }
 
 <!-- TAB HISTORIAL -->
 <div class="sec" id="tab-historial" style="display:none">
-  <div class="sec-label">Tocá un día para editar</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div class="sec-label" style="margin-bottom:0">Tocá un día para editar</div>
+    <button onclick="openNewDay()" style="background:var(--lime);color:#0d1400;border:none;border-radius:8px;padding:7px 14px;font-family:var(--syne);font-size:12px;font-weight:700;cursor:pointer;">+ Agregar día</button>
+  </div>
   <div class="rec-list" id="h-list"></div>
 </div>
 
@@ -457,8 +460,11 @@ input[type=file] { display: none; }
 <div class="overlay" id="edit-overlay">
   <div class="sheet">
     <div class="sheet-handle"></div>
-    <div class="sheet-title">Editar registro</div>
-    <div class="sheet-sub" id="edit-date-lbl"></div>
+    <div class="sheet-title" id="edit-title">Editar registro</div>
+    <div class="edit-field" id="edit-date-wrap">
+      <label class="edit-lbl">Fecha</label>
+      <input class="edit-inp" type="date" id="edit-date" />
+    </div>
     <div class="edit-field">
       <label class="edit-lbl">Entrada</label>
       <input class="edit-inp" type="time" id="edit-in" />
@@ -627,10 +633,20 @@ function setTab(name,btn){
   btn.classList.add('active');
 }
 
+function openNewDay(){
+  editingKey=null;
+  document.getElementById('edit-title').textContent='Agregar día';
+  document.getElementById('edit-date-wrap').style.display='';
+  document.getElementById('edit-date').value=todayKey();
+  document.getElementById('edit-in').value='';
+  document.getElementById('edit-out').value='';
+  document.getElementById('edit-overlay').classList.add('show');
+}
 function openEdit(key){
   editingKey=key;
   const r=records.find(x=>x.key===key);
-  document.getElementById('edit-date-lbl').textContent=dateLabel(key);
+  document.getElementById('edit-title').textContent='Editar — '+dateLabel(key);
+  document.getElementById('edit-date-wrap').style.display='none';
   document.getElementById('edit-in').value=r&&r.in?fmtTime(r.in):'';
   document.getElementById('edit-out').value=r&&r.out?fmtTime(r.out):'';
   document.getElementById('edit-overlay').classList.add('show');
@@ -640,12 +656,18 @@ function saveEdit(){
   const iv=document.getElementById('edit-in').value;
   const ov=document.getElementById('edit-out').value;
   if(!iv){toast('La entrada es obligatoria');return;}
-  let r=records.find(x=>x.key===editingKey);
-  if(!r){r={key:editingKey,in:null,out:null};records.push(r);}
-  r.in=tsFromKeyAndTime(editingKey,iv);
-  r.out=ov?tsFromKeyAndTime(editingKey,ov):null;
+  // determine key
+  let key=editingKey;
+  if(!key){
+    key=document.getElementById('edit-date').value;
+    if(!key){toast('Elegí una fecha');return;}
+  }
+  let r=records.find(x=>x.key===key);
+  if(!r){r={key,in:null,out:null};records.push(r);}
+  r.in=tsFromKeyAndTime(key,iv);
+  r.out=ov?tsFromKeyAndTime(key,ov):null;
   if(r.out&&r.out<r.in)r.out+=86400000;
-  save();updateUI();closeEdit();toast('✓ Registro actualizado');
+  save();updateUI();closeEdit();toast('✓ Registro guardado');
 }
 
 function confirmAction(type){
