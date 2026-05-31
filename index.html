@@ -62,7 +62,7 @@ body::before {
 /* ── CLOCK HERO ── */
 .hero { padding: 18px 20px 20px; }
 .hero-time {
-  font-size: clamp(32px, 10vw, 48px);
+  font-size: clamp(52px, 16vw, 72px);
   font-weight: 800;
   letter-spacing: -.04em;
   line-height: 1;
@@ -667,12 +667,13 @@ function confirmDelete(){
 }
 function closeSheet(){document.getElementById('overlay').classList.remove('show');pendingAction=null;}
 function doAction(){
+  const action=pendingAction;
   closeSheet();
-  if(pendingAction==='in'){
+  if(action==='in'){
     const k=todayKey();if(!records.find(r=>r.key===k))records.push({key:k,in:Date.now(),out:null});toast('✓ Entrada registrada');
-  }else if(pendingAction==='out'){
+  }else if(action==='out'){
     const rec=records.find(r=>r.key===todayKey());if(rec&&rec.in&&!rec.out){rec.out=Date.now();toast('✓ Salida registrada');}
-  }else if(pendingAction==='delete'){records=[];toast('Datos eliminados');}
+  }else if(action==='delete'){records=[];toast('Datos eliminados');}
   save();updateUI();
 }
 
