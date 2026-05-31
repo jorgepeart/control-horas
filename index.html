@@ -382,7 +382,7 @@ input[type=file] { display: none; }
     <div class="card"><div class="card-label">Normales</div><div class="card-val lime sm" id="s-normal">0h</div></div>
     <div class="card"><div class="card-label">Extras 50%</div><div class="card-val amber sm" id="s-extra" style="font-size:14px">0h</div></div>
     <div class="card"><div class="card-label">Extras 100%</div><div class="card-val amber sm" id="s-extra100" style="font-size:14px">0h</div></div>
-    <div class="card" style="grid-column:span 2"><div class="card-label">Total horas</div><div class="card-val lime sm" id="s-total">0h</div></div>
+
   </div>
   <div class="rec-list" id="s-list"></div>
 </div>
@@ -421,7 +421,7 @@ input[type=file] { display: none; }
     <div class="card"><div class="card-label">Normales</div><div class="card-val lime sm" id="stat-normal">0h</div></div>
     <div class="card"><div class="card-label">Extras 50%</div><div class="card-val amber sm" id="stat-extra50">0h</div></div>
     <div class="card"><div class="card-label">Extras 100%</div><div class="card-val amber sm" id="stat-extra100">0h</div></div>
-    <div class="card" style="grid-column:span 2"><div class="card-label">Total horas</div><div class="card-val lime sm" id="stat-hours">0h</div></div>
+
   </div>
   <div class="sec-label">Feriados</div>
   <div style="margin-bottom:20px">
@@ -641,7 +641,7 @@ function renderSemana(){
   document.getElementById('s-normal').textContent=msToHM(n);
   document.getElementById('s-extra').textContent=msToHM(e50);
   document.getElementById('s-extra100') && (document.getElementById('s-extra100').textContent=msToHM(e100));
-  document.getElementById('s-total').textContent=msToHM(n+e50+e100);
+
   renderList(wk,document.getElementById('s-list'),false);
 }
 
@@ -658,7 +658,7 @@ function renderStats(){
   document.getElementById('stat-normal').textContent=msToHM(n);
   document.getElementById('stat-extra50').textContent=msToHM(e50);
   document.getElementById('stat-extra100').textContent=msToHM(e100);
-  document.getElementById('stat-hours').textContent=msToHM(n+e50+e100);
+
 }
 
 function setTab(name,btn){
