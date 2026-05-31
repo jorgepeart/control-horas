@@ -309,7 +309,7 @@ input[type=file] { display: none; }
 <!-- HEADER -->
 <div class="hdr">
   <div class="hdr-brand">Mis Horas</div>
-  <div class="hdr-week" id="week-hdr"></div>
+
 </div>
 
 <!-- CLOCK HERO -->
@@ -345,7 +345,7 @@ input[type=file] { display: none; }
 <div class="tabs-wrap">
   <div class="tabs">
     <button class="tab active" onclick="setTab('hoy',this)">Hoy</button>
-    <button class="tab" onclick="setTab('semana',this)">Semana</button>
+    <button class="tab" onclick="setTab('semana',this)">Mes</button>
     <button class="tab" onclick="setTab('historial',this)">Historial</button>
     <button class="tab" onclick="setTab('comparar',this)">Comparar</button>
     <button class="tab" onclick="setTab('datos',this)">Datos</button>
@@ -376,7 +376,7 @@ input[type=file] { display: none; }
 
 <!-- TAB SEMANA -->
 <div class="sec" id="tab-semana" style="display:none">
-  <div class="sec-label">Esta semana</div>
+  <div class="sec-label">Este mes</div>
   <div class="grid4">
     <div class="card"><div class="card-label">Días</div><div class="card-val" id="s-dias">0</div></div>
     <div class="card"><div class="card-label">Normales</div><div class="card-val lime sm" id="s-normal">0h</div></div>
@@ -530,7 +530,7 @@ function updateLive(){
   if(t&&t.in&&!t.out)document.getElementById('h-live').textContent=msToHM(Date.now()-t.in);
   const wk=getWeekRecords();
   let ms=0;wk.forEach(r=>{if(r.in&&r.out)ms+=r.out-r.in;});
-  document.getElementById('week-hdr').textContent=msToHM(ms)+'\nesta semana';
+  
 }
 
 function updateUI(){
@@ -571,9 +571,8 @@ function updateUI(){
 }
 
 function getWeekRecords(){
-  const now=new Date(),dow=now.getDay();
-  const mon=new Date(now);mon.setDate(now.getDate()-(dow===0?6:dow-1));mon.setHours(0,0,0,0);
-  return records.filter(r=>{const[y,m,d]=r.key.split('-');return new Date(+y,+m-1,+d)>=mon;}).sort((a,b)=>b.key.localeCompare(a.key));
+  const now=new Date();
+  return records.filter(r=>{const[y,m]=r.key.split('-');return +y===now.getFullYear()&&+m===(now.getMonth()+1);}).sort((a,b)=>b.key.localeCompare(a.key));
 }
 
 function renderList(recs,el,editable=false){
