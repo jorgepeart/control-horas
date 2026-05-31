@@ -807,10 +807,18 @@ function renderHolidays(){
   const el=document.getElementById('holiday-list');
   if(!holidays.length){el.innerHTML='<div style="font-family:var(--mono);font-size:11px;color:var(--ink3);padding:8px 0">Sin feriados cargados</div>';return;}
   el.innerHTML='';
-  [...holidays].sort().forEach(k=>{
+  [...holidays].sort().forEach(function(k){
     const div=document.createElement('div');
     div.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--bg2);border:1px solid var(--line);border-radius:var(--r)';
-    div.innerHTML='<span style="font-family:var(--mono);font-size:13px">'+dateLabel(k)+'</span><button onclick="removeHoliday(''+k+'')" style="background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;padding:0 4px">×</button>';
+    const span=document.createElement('span');
+    span.style.cssText='font-family:var(--mono);font-size:13px';
+    span.textContent=dateLabel(k);
+    const btn=document.createElement('button');
+    btn.style.cssText='background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;padding:0 4px';
+    btn.textContent='x';
+    btn.onclick=function(){removeHoliday(k);};
+    div.appendChild(span);
+    div.appendChild(btn);
     el.appendChild(div);
   });
 }
